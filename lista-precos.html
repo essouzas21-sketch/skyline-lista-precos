@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Estoque / Lista de Preços — Skyline</title>
+  <title>Lista de Preços — Skyline</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -297,12 +297,6 @@
       color: #4b2e83;
     }
 
-    td.saldo {
-      font-variant-numeric: tabular-nums;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
     td.grade-a {
       background: #d9f2d0;
       color: #1f7a1f;
@@ -398,20 +392,31 @@
   </style>
 </head>
 <body>
+  <header class="app-top">
+    <div class="brand-block">
+      <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="108" height="34" />
+      <div class="brand-text">
+        <strong>Lista de Preços</strong>
+        <span id="metaStamp">—</span>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input
+        id="filterSearch"
+        type="search"
+        placeholder="Buscar SKU, descrição, marca ou qualidade…"
+        autocomplete="off"
+      />
+      <button class="btn" type="button" id="btnReload">Atualizar</button>
+      <button class="btn ghost" type="button" id="btnExcel" title="Baixar planilha (.xlsx)">
+        Excel
+      </button>
+    </div>
+  </header>
+
   <main class="main">
     <div class="filters-row">
-      <div class="search-box" style="flex:1;min-width:240px">
-        <input
-          id="filterSearch"
-          type="search"
-          placeholder="Buscar SKU, descrição, marca ou qualidade…"
-          autocomplete="off"
-        />
-        <button class="btn" type="button" id="btnReload">Atualizar</button>
-        <button class="btn ghost" type="button" id="btnExcel" title="Baixar planilha (.xlsx)">
-          Excel
-        </button>
-      </div>
       <div class="filter-field">
         <label for="filterMarca">Marca</label>
         <select id="filterMarca">
@@ -424,7 +429,6 @@
           <option value="">Todas</option>
         </select>
       </div>
-      <div class="status" id="metaStamp" style="align-self:center;margin:0">—</div>
     </div>
 
     <div class="status" id="statusMsg">Carregando…</div>
@@ -435,8 +439,8 @@
         <div class="val" id="kpiTotal">0</div>
       </div>
       <div class="stat">
-        <div class="lab">Saldo total</div>
-        <div class="val" id="kpiSaldo">0</div>
+        <div class="lab">Marcas</div>
+        <div class="val" id="kpiMarcas">0</div>
       </div>
       <div class="stat">
         <div class="lab">Exibindo (filtro)</div>
@@ -445,6 +449,9 @@
     </section>
 
     <section class="card">
+      <div class="sheet-brand">
+        <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="120" height="38" />
+      </div>
       <div class="legend-wrap">
         <table class="legend-table" id="gradeLegendTable">
           <thead>
@@ -465,12 +472,11 @@
               <th>Descrição</th>
               <th>Marca</th>
               <th>Qualidade</th>
-              <th>Saldo</th>
               <th>Valor do produto</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="6" class="loading">Carregando lista…</td></tr>
+            <tr><td colspan="5" class="loading">Carregando lista…</td></tr>
           </tbody>
         </table>
       </div>
@@ -555,25 +561,14 @@
       return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     }
 
-    function parseSaldo(v) {
-      if (v == null || v === "") return null;
-      if (typeof v === "number" && Number.isFinite(v)) return v;
-      const n = Number(String(v).trim().replace(",", "."));
-      return Number.isFinite(n) ? n : null;
-    }
-
     function mapRow(raw) {
       const valor = parseMoney(raw["Preco Tabela 1"] ?? raw.preco_tabela_1 ?? raw.PrecoTabela1);
-      const saldo = parseSaldo(
-        raw.Saldo_Principal ?? raw.saldo_principal ?? raw.Saldo ?? raw.saldo ?? raw.ESTOQUE ?? raw.estoque
-      );
       return {
         sku: String(raw.SKU ?? raw.sku ?? "").trim(),
         descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
         produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
         marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
         qualidade: String(raw.Qualidade ?? raw.qualidade ?? "").trim() || "—",
-        saldo,
         valor
       };
     }
@@ -639,29 +634,27 @@
     function renderKpis() {
       document.getElementById("kpiTotal").textContent = String(allRows.length);
       document.getElementById("kpiVisible").textContent = String(viewRows.length);
-      const saldoSum = viewRows.reduce((sum, r) => sum + (Number.isFinite(r.saldo) ? r.saldo : 0), 0);
-      document.getElementById("kpiSaldo").textContent = String(saldoSum);
+      const marcas = new Set(allRows.map((r) => r.marca).filter((m) => m && m !== "—"));
+      document.getElementById("kpiMarcas").textContent = String(marcas.size);
     }
 
     function renderTable() {
       const tbody = document.getElementById("tableBody");
       renderKpis();
       if (!viewRows.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty">${
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">${
           allRows.length ? "Nenhum item no filtro." : "Sem itens na lista de preços."
         }</td></tr>`;
         return;
       }
       tbody.innerHTML = viewRows.map((r) => {
         const gClass = gradeClass(r.qualidade);
-        const saldoTxt = r.saldo == null ? "—" : String(r.saldo);
         return `
         <tr>
           <td class="sku">${escapeHtml(r.sku || "—")}</td>
           <td class="desc">${escapeHtml(r.descricao)}</td>
           <td>${escapeHtml(r.marca)}</td>
           <td class="${gClass}">${escapeHtml(r.qualidade)}</td>
-          <td class="saldo">${escapeHtml(saldoTxt)}</td>
           <td class="money">${escapeHtml(formatMoney(r.valor))}</td>
         </tr>`;
       }).join("");
@@ -718,7 +711,7 @@
       }
 
       const sheetRows = [];
-      const merges = ["A1:F1", "A2:F2", "B3:C3", "D3:F3", "A8:F8"];
+      const merges = ["A1:E1", "A2:E2", "B3:C3", "D3:E3", "A8:E8"];
       sheetRows.push(xlsxRow(1, 22, xlsxText(1, 1, 1, "Skyline mobile")));
       sheetRows.push(xlsxRow(2, 8, xlsxText(1, 2, 2, "")));
       sheetRows.push(xlsxRow(3, 22, [
@@ -729,7 +722,7 @@
 
       GRADE_LEGEND.forEach((item, idx) => {
         const r = 4 + idx;
-        merges.push(`B${r}:C${r}`, `D${r}:F${r}`);
+        merges.push(`B${r}:C${r}`, `D${r}:E${r}`);
         sheetRows.push(xlsxRow(r, 36, [
           xlsxText(1, r, legendGradeStyle(item.gradeStyle), item.grade),
           xlsxText(2, r, 5, item.estetica),
@@ -743,8 +736,7 @@
         xlsxText(2, 9, 3, "Descrição"),
         xlsxText(3, 9, 3, "Marca"),
         xlsxText(4, 9, 3, "Qualidade"),
-        xlsxText(5, 9, 3, "Saldo"),
-        xlsxText(6, 9, 3, "Valor do produto")
+        xlsxText(5, 9, 3, "Valor do produto")
       ].join("")));
 
       rows.forEach((item, idx) => {
@@ -754,8 +746,7 @@
           xlsxText(2, r, 5, item.descricao),
           xlsxText(3, r, 4, item.marca),
           xlsxText(4, r, gradeExcelStyle(item.qualidade), item.qualidade),
-          xlsxNumber(5, r, 4, item.saldo),
-          xlsxNumber(6, r, 6, item.valor)
+          xlsxNumber(5, r, 6, item.valor)
         ].join("")));
       });
 
@@ -763,7 +754,7 @@
       const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <dimension ref="A1:F${lastRow}"/>
+  <dimension ref="A1:E${lastRow}"/>
   <sheetViews><sheetView workbookViewId="0" tabSelected="1"/></sheetViews>
   <sheetFormatPr defaultRowHeight="18"/>
   <cols>
@@ -771,8 +762,7 @@
     <col min="2" max="2" width="42" customWidth="1"/>
     <col min="3" max="3" width="16" customWidth="1"/>
     <col min="4" max="4" width="16" customWidth="1"/>
-    <col min="5" max="5" width="12" customWidth="1"/>
-    <col min="6" max="6" width="20" customWidth="1"/>
+    <col min="5" max="5" width="20" customWidth="1"/>
   </cols>
   <sheetData>
     ${sheetRows.join("")}
@@ -904,7 +894,7 @@
         renderTable();
         setStatus(`Erro: ${err.message}`, true);
         document.getElementById("tableBody").innerHTML =
-          `<tr><td colspan="6" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
+          `<tr><td colspan="5" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
       } finally {
         document.getElementById("btnReload").disabled = false;
         document.getElementById("btnExcel").disabled = false;
