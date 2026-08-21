@@ -171,7 +171,8 @@
       color: var(--muted);
     }
 
-    .filter-field select {
+    .filter-field select,
+    .filter-field input[type="date"] {
       height: 40px;
       border-radius: 10px;
       border: 1px solid var(--line);
@@ -181,6 +182,30 @@
       font: inherit;
       font-size: 0.9rem;
       min-width: 180px;
+    }
+
+    .filter-field input[type="date"] {
+      min-width: 160px;
+    }
+
+    .period-presets {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding-bottom: 1px;
+    }
+
+    .period-presets .btn {
+      height: 36px;
+      padding: 0 12px;
+      font-size: 0.78rem;
+    }
+
+    .period-presets .btn.active {
+      background: linear-gradient(135deg, #4b2e83, #7c5cbf);
+      color: #fff;
+      border-color: transparent;
     }
 
     .hero-stats {
@@ -418,6 +443,20 @@
   <main class="main">
     <div class="filters-row">
       <div class="filter-field">
+        <label for="dateStart">Início</label>
+        <input type="date" id="dateStart" />
+      </div>
+      <div class="filter-field">
+        <label for="dateEnd">Fim</label>
+        <input type="date" id="dateEnd" />
+      </div>
+      <div class="period-presets" id="periodPresets">
+        <button type="button" class="btn ghost active" data-period="all">Todos</button>
+        <button type="button" class="btn ghost" data-period="7">7 dias</button>
+        <button type="button" class="btn ghost" data-period="30">30 dias</button>
+        <button type="button" class="btn ghost" data-period="month">Este mês</button>
+      </div>
+      <div class="filter-field">
         <label for="filterMarca">Marca</label>
         <select id="filterMarca">
           <option value="">Todas</option>
@@ -561,6 +600,66 @@
       return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     }
 
+    function todayISO() {
+      const d = new Date();
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function shiftISO(iso, days) {
+      const d = new Date(`${iso}T12:00:00`);
+      d.setDate(d.getDate() + days);
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function monthStartISO(iso) {
+      return `${iso.slice(0, 7)}-01`;
+    }
+
+    function toISODate(value) {
+      if (value == null || value === "") return null;
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+      }
+      const s = String(value).trim();
+      if (!s) return null;
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      const br = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (br) {
+        return `${br[3]}-${br[2].padStart(2, "0")}-${br[1].padStart(2, "0")}`;
+      }
+      const t = Date.parse(s);
+      if (!Number.isNaN(t)) {
+        const d = new Date(t);
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+        return local.toISOString().slice(0, 10);
+      }
+      return null;
+    }
+
+    function pickRowDate(raw) {
+      if (!raw || typeof raw !== "object") return null;
+      const keys = [
+        "Data", "data", "DATA",
+        "data_atualizacao", "DataAtualizacao", "dt_atualizacao",
+        "updated_at", "created_at", "alterado_em",
+        "vigencia", "data_vigencia", "Data_Vigencia",
+        "Data_Alteracao", "data_alteracao"
+      ];
+      for (const key of keys) {
+        const iso = toISODate(raw[key]);
+        if (iso) return iso;
+      }
+      for (const [key, val] of Object.entries(raw)) {
+        if (!/data|date|atualiz|vigenc/i.test(key)) continue;
+        const iso = toISODate(val);
+        if (iso) return iso;
+      }
+      return null;
+    }
+
     function mapRow(raw) {
       const valor = parseMoney(raw["Preco Tabela 1"] ?? raw.preco_tabela_1 ?? raw.PrecoTabela1);
       return {
@@ -569,7 +668,8 @@
         produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
         marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
         qualidade: String(raw.Qualidade ?? raw.qualidade ?? "").trim() || "—",
-        valor
+        valor,
+        dateISO: pickRowDate(raw)
       };
     }
 
@@ -609,6 +709,45 @@
       fillSelect("filterQualidade", allRows.map((r) => r.qualidade));
     }
 
+    function setPeriodPreset(period) {
+      const end = todayISO();
+      const startEl = document.getElementById("dateStart");
+      const endEl = document.getElementById("dateEnd");
+      if (period === "all") {
+        startEl.value = "";
+        endEl.value = "";
+      } else if (period === "7") {
+        startEl.value = shiftISO(end, -6);
+        endEl.value = end;
+      } else if (period === "30") {
+        startEl.value = shiftISO(end, -29);
+        endEl.value = end;
+      } else if (period === "month") {
+        startEl.value = monthStartISO(end);
+        endEl.value = end;
+      }
+      syncPeriodPresetButtons();
+      applyFilter();
+    }
+
+    function currentPeriodKey() {
+      const start = document.getElementById("dateStart").value;
+      const end = document.getElementById("dateEnd").value;
+      const today = todayISO();
+      if (!start && !end) return "all";
+      if (end === today && start === shiftISO(today, -6)) return "7";
+      if (end === today && start === shiftISO(today, -29)) return "30";
+      if (end === today && start === monthStartISO(today)) return "month";
+      return "";
+    }
+
+    function syncPeriodPresetButtons() {
+      const key = currentPeriodKey();
+      document.querySelectorAll("#periodPresets [data-period]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.period === key);
+      });
+    }
+
     function applyFilter() {
       const q = String(document.getElementById("filterSearch").value || "")
         .trim()
@@ -617,10 +756,19 @@
         .replace(/[\u0300-\u036f]/g, "");
       const marca = document.getElementById("filterMarca").value;
       const qualidade = document.getElementById("filterQualidade").value;
+      const start = document.getElementById("dateStart").value;
+      const end = document.getElementById("dateEnd").value;
+      const periodOn = Boolean(start || end);
+      const hasDates = allRows.some((r) => r.dateISO);
 
       viewRows = allRows.filter((r) => {
         if (marca && r.marca !== marca) return false;
         if (qualidade && r.qualidade !== qualidade) return false;
+        if (periodOn && hasDates) {
+          if (!r.dateISO) return false;
+          if (start && r.dateISO < start) return false;
+          if (end && r.dateISO > end) return false;
+        }
         if (!q) return true;
         const blob = `${r.sku} ${r.descricao} ${r.marca} ${r.qualidade} ${r.produtoFull}`
           .toLowerCase()
@@ -629,6 +777,9 @@
         return blob.includes(q);
       });
       renderTable();
+      if (periodOn && allRows.length && !hasDates) {
+        setStatus("Período sem efeito: a lista ainda não envia data nos itens.");
+      }
     }
 
     function renderKpis() {
@@ -906,6 +1057,19 @@
     document.getElementById("filterSearch").addEventListener("input", applyFilter);
     document.getElementById("filterMarca").addEventListener("change", applyFilter);
     document.getElementById("filterQualidade").addEventListener("change", applyFilter);
+    document.getElementById("dateStart").addEventListener("change", () => {
+      syncPeriodPresetButtons();
+      applyFilter();
+    });
+    document.getElementById("dateEnd").addEventListener("change", () => {
+      syncPeriodPresetButtons();
+      applyFilter();
+    });
+    document.getElementById("periodPresets").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-period]");
+      if (!btn) return;
+      setPeriodPreset(btn.dataset.period);
+    });
 
     if (typeof SkylineVersion !== "undefined") SkylineVersion.start(60000);
     renderGradeLegend();
