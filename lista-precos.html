@@ -1,7 +1,6 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <script src="skyline-auth.js?v=1"></script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lista de Preços — Skyline</title>
@@ -139,23 +138,6 @@
     .btn:disabled {
       opacity: 0.55;
       cursor: not-allowed;
-    }
-
-    .user-meta {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      text-align: right;
-      color: var(--muted);
-      font-size: 0.78rem;
-    }
-
-    .user-meta strong {
-      display: block;
-      color: var(--text);
-      font-weight: 700;
     }
 
     .main {
@@ -406,7 +388,6 @@
     @media (max-width: 980px) {
       .hero-stats { grid-template-columns: 1fr; }
       .table-wrap { max-height: none; }
-      .user-meta { margin-left: 0; width: 100%; justify-content: space-between; }
     }
   </style>
 </head>
@@ -431,14 +412,6 @@
       <button class="btn ghost" type="button" id="btnExcel" title="Exportar planilha Excel">
         Excel
       </button>
-    </div>
-
-    <div class="user-meta">
-      <div>
-        <strong id="userLabel">—</strong>
-        <span id="userEmail">—</span>
-      </div>
-      <button class="btn ghost" type="button" id="btnLogout">Sair</button>
     </div>
   </header>
 
@@ -511,15 +484,6 @@
   </main>
 
   <script>
-    const session = SkylineAuth.getSession();
-    if (session) {
-      document.getElementById("userLabel").textContent = session.name || "Usuário";
-      document.getElementById("userEmail").textContent = session.email || "";
-    }
-    document.getElementById("btnLogout").addEventListener("click", () => {
-      SkylineAuth.logout("index.html");
-    });
-
     const API_URL = SkylinePrecos.API_LISTA_PRECOS;
     let allRows = [];
     let viewRows = [];

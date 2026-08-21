@@ -1,13 +1,6 @@
 # Lista de Preços Skyline
 
-App web separado do dashboard de produção. Consulta a tabela de preços (SKU, marca, qualidade) e exporta Excel.
-
-## Páginas
-
-| Página | Arquivo |
-|--------|---------|
-| Login | `index.html` |
-| Lista | `lista-precos.html` |
+App web separado do dashboard de produção. Consulta a tabela de preços (SKU, marca, qualidade) e exporta Excel. Acesso aberto, sem login.
 
 ## Link público (GitHub Pages)
 
