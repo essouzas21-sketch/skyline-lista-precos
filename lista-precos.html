@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="skyline-version.js?v=1"></script>
-  <script src="skyline-precos.js?v=1"></script>
+  <script src="skyline-precos.js?v=2"></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -409,7 +409,7 @@
         autocomplete="off"
       />
       <button class="btn" type="button" id="btnReload">Atualizar</button>
-      <button class="btn ghost" type="button" id="btnExcel" title="Exportar planilha Excel">
+      <button class="btn ghost" type="button" id="btnExcel" title="Baixar planilha (.xlsx)">
         Excel
       </button>
     </div>
@@ -662,245 +662,209 @@
 
     function xmlEscape(s) {
       return String(s ?? "")
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
     }
 
-    function excelCellText(value, styleId) {
-      const style = styleId ? ` ss:StyleID="${styleId}"` : "";
-      return `<Cell${style}><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`;
+    function xlsxCellRef(col, row) {
+      return String.fromCharCode(64 + col) + row;
     }
 
-    function excelCellNumber(value, styleId) {
-      if (value == null || !Number.isFinite(value)) {
-        return excelCellText("", styleId);
-      }
-      const style = styleId ? ` ss:StyleID="${styleId}"` : "";
-      return `<Cell${style}><Data ss:Type="Number">${value}</Data></Cell>`;
+    function xlsxText(col, row, style, value) {
+      return `<c r="${xlsxCellRef(col, row)}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    }
+
+    function xlsxNumber(col, row, style, value) {
+      if (value == null || !Number.isFinite(value)) return xlsxText(col, row, style, "");
+      return `<c r="${xlsxCellRef(col, row)}" s="${style}"><v>${value}</v></c>`;
+    }
+
+    function xlsxRow(r, height, cells) {
+      const ht = height ? ` ht="${height}" customHeight="1"` : "";
+      return `<row r="${r}"${ht}>${cells}</row>`;
     }
 
     function gradeExcelStyle(qualidade) {
       const cls = gradeClass(qualidade);
-      if (cls === "grade-a") return "GradeA";
-      if (cls === "grade-b") return "GradeB";
-      if (cls === "grade-bom") return "GradeBom";
-      if (cls === "grade-outlet") return "GradeOutlet";
-      return "Body";
+      if (cls === "grade-a") return 7;
+      if (cls === "grade-b") return 8;
+      if (cls === "grade-bom") return 9;
+      if (cls === "grade-outlet") return 10;
+      return 4;
     }
 
-    function legendExcelRows() {
-      const head = [
-        excelCellText("GRADE", "Header"),
-        `<Cell ss:MergeAcross="1" ss:StyleID="Header"><Data ss:Type="String">CONDIÇÃO ESTÉTICA</Data></Cell>`,
-        `<Cell ss:MergeAcross="1" ss:StyleID="Header"><Data ss:Type="String">CONDIÇÃO FUNCIONAL</Data></Cell>`
-      ].join("");
-      const rows = GRADE_LEGEND.map((r) => {
-        const gStyle = r.gradeStyle === "grade-a"
-          ? "GradeA"
-          : r.gradeStyle === "grade-b"
-            ? "GradeB"
-            : r.gradeStyle === "grade-bom"
-              ? "GradeBom"
-              : "GradeOutlet";
-        return `<Row ss:Height="42">${[
-          excelCellText(r.grade, gStyle),
-          `<Cell ss:MergeAcross="1" ss:StyleID="BodyLeft"><Data ss:Type="String">${xmlEscape(r.estetica)}</Data></Cell>`,
-          `<Cell ss:MergeAcross="1" ss:StyleID="BodyLeft"><Data ss:Type="String">${xmlEscape(r.funcional)}</Data></Cell>`
-        ].join("")}</Row>`;
-      }).join("");
-      return `<Row ss:Height="26">${head}</Row>${rows}`;
+    function legendGradeStyle(gradeStyle) {
+      if (gradeStyle === "grade-a") return 7;
+      if (gradeStyle === "grade-b") return 8;
+      if (gradeStyle === "grade-bom") return 9;
+      return 10;
     }
 
-    function downloadExcel() {
+    async function downloadExcel() {
       const rows = viewRows.length ? viewRows : allRows;
       if (!rows.length) {
         alert("Nenhum item para exportar.");
         return;
       }
 
-      const header = [
-        "SKU",
-        "Descrição",
-        "Marca",
-        "Qualidade",
-        "Valor do produto"
-      ].map((h) => excelCellText(h, "Header")).join("");
+      const sheetRows = [];
+      const merges = ["A1:E1", "A2:E2", "B3:C3", "D3:E3", "A8:E8"];
+      sheetRows.push(xlsxRow(1, 22, xlsxText(1, 1, 1, "Skyline mobile")));
+      sheetRows.push(xlsxRow(2, 8, xlsxText(1, 2, 2, "")));
+      sheetRows.push(xlsxRow(3, 22, [
+        xlsxText(1, 3, 3, "GRADE"),
+        xlsxText(2, 3, 3, "CONDIÇÃO ESTÉTICA"),
+        xlsxText(4, 3, 3, "CONDIÇÃO FUNCIONAL")
+      ].join("")));
 
-      const body = rows.map((r) => {
-        const gStyle = gradeExcelStyle(r.qualidade);
-        const cells = [
-          excelCellText(r.sku, "BodyLeft"),
-          excelCellText(r.descricao, "BodyLeft"),
-          excelCellText(r.marca, "Body"),
-          excelCellText(r.qualidade, gStyle),
-          excelCellNumber(r.valor, "Money")
-        ].join("");
-        return `<Row>${cells}</Row>`;
-      }).join("");
+      GRADE_LEGEND.forEach((item, idx) => {
+        const r = 4 + idx;
+        merges.push(`B${r}:C${r}`, `D${r}:E${r}`);
+        sheetRows.push(xlsxRow(r, 36, [
+          xlsxText(1, r, legendGradeStyle(item.gradeStyle), item.grade),
+          xlsxText(2, r, 5, item.estetica),
+          xlsxText(4, r, 5, item.funcional)
+        ].join("")));
+      });
+
+      sheetRows.push(xlsxRow(8, 10, xlsxText(1, 8, 0, "")));
+      sheetRows.push(xlsxRow(9, 22, [
+        xlsxText(1, 9, 3, "SKU"),
+        xlsxText(2, 9, 3, "Descrição"),
+        xlsxText(3, 9, 3, "Marca"),
+        xlsxText(4, 9, 3, "Qualidade"),
+        xlsxText(5, 9, 3, "Valor do produto")
+      ].join("")));
+
+      rows.forEach((item, idx) => {
+        const r = 10 + idx;
+        sheetRows.push(xlsxRow(r, 18, [
+          xlsxText(1, r, 5, item.sku),
+          xlsxText(2, r, 5, item.descricao),
+          xlsxText(3, r, 4, item.marca),
+          xlsxText(4, r, gradeExcelStyle(item.qualidade), item.qualidade),
+          xlsxNumber(5, r, 6, item.valor)
+        ].join("")));
+      });
+
+      const lastRow = 9 + rows.length;
+      const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <dimension ref="A1:E${lastRow}"/>
+  <sheetViews><sheetView workbookViewId="0" tabSelected="1"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="18"/>
+  <cols>
+    <col min="1" max="1" width="22" customWidth="1"/>
+    <col min="2" max="2" width="42" customWidth="1"/>
+    <col min="3" max="3" width="16" customWidth="1"/>
+    <col min="4" max="4" width="16" customWidth="1"/>
+    <col min="5" max="5" width="20" customWidth="1"/>
+  </cols>
+  <sheetData>
+    ${sheetRows.join("")}
+  </sheetData>
+  <mergeCells count="${merges.length}">
+    ${merges.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}
+  </mergeCells>
+</worksheet>`;
+
+      const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+      const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+      const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+      const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Lista de Precos" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+      const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00"/></numFmts>
+  <fonts count="8">
+    <font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
+    <font><b/><sz val="16"/><color rgb="FF4B2E83"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF4B2E83"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF1F7A1F"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF1F4F9A"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF5B3D8F"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFC45A12"/><name val="Calibri"/></font>
+  </fonts>
+  <fills count="7">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF4B2E83"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD9F2D0"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD6E8FB"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEBE4F7"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFDE7C7"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFD9D2E8"/></left>
+      <right style="thin"><color rgb="FFD9D2E8"/></right>
+      <top style="thin"><color rgb="FFD9D2E8"/></top>
+      <bottom style="thin"><color rgb="FFD9D2E8"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1"><xf/></cellStyleXfs>
+  <cellXfs count="11">
+    <xf xfId="0"/>
+    <xf xfId="0" fontId="1" applyFont="1"/>
+    <xf xfId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf xfId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="3" numFmtId="164" borderId="1" applyFont="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf xfId="0" fontId="4" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="5" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="6" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="7" fillId="6" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+  </cellXfs>
+</styleSheet>`;
 
       const stamp = new Date().toISOString().slice(0, 10);
-      const filename = `lista-precos-${stamp}.xls`;
-
-      const xml = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
- <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-  <Title>Lista de Preços</Title>
-  <Author>Skyline Lista de Preços</Author>
- </DocumentProperties>
- <Styles>
-  <Style ss:ID="Default" ss:Name="Normal">
-   <Alignment ss:Vertical="Center"/>
-   <Font ss:FontName="Calibri" ss:Size="11"/>
-  </Style>
-  <Style ss:ID="Brand">
-   <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#4B2E83"/>
-   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-  </Style>
-  <Style ss:ID="TopBar">
-   <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/>
-   <Interior ss:Color="#4B2E83" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="Header">
-   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
-   <Interior ss:Color="#4B2E83" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="Body">
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="BodyBold">
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Font ss:Bold="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="BodyLeft">
-   <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="Money">
-   <NumberFormat ss:Format="R$ #,##0.00"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-   <Font ss:Bold="1" ss:Color="#4B2E83"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="GradeA">
-   <Font ss:Bold="1" ss:Color="#1F7A1F"/>
-   <Interior ss:Color="#D9F2D0" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="GradeB">
-   <Font ss:Bold="1" ss:Color="#1F4F9A"/>
-   <Interior ss:Color="#D6E8FB" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="GradeBom">
-   <Font ss:Bold="1" ss:Color="#5B3D8F"/>
-   <Interior ss:Color="#EBE4F7" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
-  <Style ss:ID="GradeOutlet">
-   <Font ss:Bold="1" ss:Color="#C45A12"/>
-   <Interior ss:Color="#FDE7C7" ss:Pattern="Solid"/>
-   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
-   <Borders>
-    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
-   </Borders>
-  </Style>
- </Styles>
- <Worksheet ss:Name="Lista de Precos">
-  <Table>
-   <Column ss:Width="150"/>
-   <Column ss:Width="160"/>
-   <Column ss:Width="180"/>
-   <Column ss:Width="180"/>
-   <Column ss:Width="220"/>
-   <Row ss:Height="28">
-    <Cell ss:MergeAcross="4" ss:StyleID="Brand"><Data ss:Type="String">Skyline mobile</Data></Cell>
-   </Row>
-   <Row ss:Height="8">
-    <Cell ss:MergeAcross="4" ss:StyleID="TopBar"><Data ss:Type="String"></Data></Cell>
-   </Row>
-   ${legendExcelRows()}
-   <Row ss:Height="10">
-    <Cell ss:MergeAcross="4"><Data ss:Type="String"></Data></Cell>
-   </Row>
-   <Row ss:Height="28" ss:StyleID="Header">${header}</Row>
-   ${body}
-  </Table>
- </Worksheet>
-</Workbook>`;
-
-      const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      const filename = `lista-precos-${stamp}.xlsx`;
+      const btn = document.getElementById("btnExcel");
+      btn.disabled = true;
+      try {
+        const blob = await SkylinePrecos.makeXlsxBlob([
+          { name: "[Content_Types].xml", data: contentTypes },
+          { name: "_rels/.rels", data: rels },
+          { name: "xl/workbook.xml", data: workbook },
+          { name: "xl/_rels/workbook.xml.rels", data: workbookRels },
+          { name: "xl/worksheets/sheet1.xml", data: sheetXml },
+          { name: "xl/styles.xml", data: styles }
+        ]);
+        SkylinePrecos.saveBlob(blob, filename);
+      } catch (err) {
+        alert(`Falha ao gerar a planilha: ${err.message || err}`);
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     async function loadData() {
