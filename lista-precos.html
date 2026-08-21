@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <script src="skyline-auth.js?v=1"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Preços — Skyline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="skyline-version.js?v=1"></script>
+  <script src="skyline-precos.js?v=1"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-2: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f7f9fc;
+      --line: rgba(15, 40, 70, 0.12);
+      --text: #15202b;
+      --muted: #5b6b7f;
+      --cyan: #0b8ec4;
+      --soft: rgba(15, 40, 70, 0.04);
+      --radius: 14px;
+      --shadow: 0 8px 28px rgba(15, 40, 70, 0.08);
+      --font-display: "Orbitron", sans-serif;
+      --font-body: "Exo 2", sans-serif;
+      --purple: #4b2e83;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(75, 46, 131, 0.08), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(11, 142, 196, 0.05), transparent 50%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 4px 18px rgba(15, 40, 70, 0.04);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-block img {
+      height: 34px;
+      width: auto;
+      display: block;
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-text strong {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--purple);
+    }
+
+    .brand-text span {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .search-box input {
+      flex: 1;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 14px;
+      font: inherit;
+      font-size: 0.95rem;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: rgba(75, 46, 131, 0.45);
+      box-shadow: 0 0 0 3px rgba(75, 46, 131, 0.12);
+    }
+
+    .btn {
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4b2e83, #7c5cbf);
+      color: #ffffff;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .user-meta {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      text-align: right;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .user-meta strong {
+      display: block;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .main {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      padding: 18px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .filters-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-field {
+      display: grid;
+      gap: 4px;
+      min-width: 160px;
+    }
+
+    .filter-field label {
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .filter-field select {
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      font-size: 0.9rem;
+      min-width: 180px;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .stat .lab {
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat .val {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.03em;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sheet-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 4px 14px;
+    }
+
+    .sheet-brand img {
+      height: 36px;
+      width: auto;
+      display: block;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      flex: 1;
+      min-height: 360px;
+      max-height: calc(100vh - 320px);
+      border: 1px solid #d9d2e8;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    th, td {
+      text-align: center;
+      padding: 10px 12px;
+      border: 1px solid #d9d2e8;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #4b2e83;
+      color: #ffffff;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    td {
+      background: #ffffff;
+      color: #2b2438;
+    }
+
+    td.sku {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    td.desc {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td.money {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #4b2e83;
+    }
+
+    td.grade-a {
+      background: #d9f2d0;
+      color: #1f7a1f;
+      font-weight: 800;
+    }
+
+    td.grade-b {
+      background: #d6e8fb;
+      color: #1f4f9a;
+      font-weight: 800;
+    }
+
+    td.grade-bom {
+      background: #ebe4f7;
+      color: #5b3d8f;
+      font-weight: 800;
+    }
+
+    td.grade-outlet {
+      background: #fde7c7;
+      color: #c45a12;
+      font-weight: 800;
+    }
+
+    tr:hover td:not([class*="grade-"]) { background: #f7f3fc; }
+
+    .legend-wrap {
+      margin: 0 0 14px;
+      overflow: auto;
+      border: 1px solid #d9d2e8;
+      border-radius: 8px;
+    }
+
+    .legend-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    .legend-table th,
+    .legend-table td {
+      border: 1px solid #d9d2e8;
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    .legend-table th {
+      background: #4b2e83;
+      color: #fff;
+      font-size: 0.64rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-align: center;
+      position: static;
+    }
+
+    .legend-table td.grade {
+      text-align: center;
+      font-weight: 800;
+      white-space: nowrap;
+      width: 140px;
+    }
+
+    .legend-table td.note {
+      text-align: left;
+      color: #2b2438;
+      line-height: 1.35;
+    }
+
+    .empty, .loading, .error {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      border: 0 !important;
+    }
+
+    .error { color: #e03131; }
+
+    .status {
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+
+    .status.err { color: #e03131; }
+
+    @media (max-width: 980px) {
+      .hero-stats { grid-template-columns: 1fr; }
+      .table-wrap { max-height: none; }
+      .user-meta { margin-left: 0; width: 100%; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-top">
+    <div class="brand-block">
+      <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="108" height="34" />
+      <div class="brand-text">
+        <strong>Lista de Preços</strong>
+        <span id="metaStamp">—</span>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input
+        id="filterSearch"
+        type="search"
+        placeholder="Buscar SKU, descrição, marca ou qualidade…"
+        autocomplete="off"
+      />
+      <button class="btn" type="button" id="btnReload">Atualizar</button>
+      <button class="btn ghost" type="button" id="btnExcel" title="Exportar planilha Excel">
+        Excel
+      </button>
+    </div>
+
+    <div class="user-meta">
+      <div>
+        <strong id="userLabel">—</strong>
+        <span id="userEmail">—</span>
+      </div>
+      <button class="btn ghost" type="button" id="btnLogout">Sair</button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="filters-row">
+      <div class="filter-field">
+        <label for="filterMarca">Marca</label>
+        <select id="filterMarca">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="filterQualidade">Qualidade</label>
+        <select id="filterQualidade">
+          <option value="">Todas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status" id="statusMsg">Carregando…</div>
+
+    <section class="hero-stats">
+      <div class="stat">
+        <div class="lab">Itens listados</div>
+        <div class="val" id="kpiTotal">0</div>
+      </div>
+      <div class="stat">
+        <div class="lab">Marcas</div>
+        <div class="val" id="kpiMarcas">0</div>
+      </div>
+      <div class="stat">
+        <div class="lab">Exibindo (filtro)</div>
+        <div class="val" id="kpiVisible">0</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sheet-brand">
+        <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="120" height="38" />
+      </div>
+      <div class="legend-wrap">
+        <table class="legend-table" id="gradeLegendTable">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Condição estética</th>
+              <th>Condição funcional</th>
+            </tr>
+          </thead>
+          <tbody id="gradeLegendBody"></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Descrição</th>
+              <th>Marca</th>
+              <th>Qualidade</th>
+              <th>Valor do produto</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="5" class="loading">Carregando lista…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const session = SkylineAuth.getSession();
+    if (session) {
+      document.getElementById("userLabel").textContent = session.name || "Usuário";
+      document.getElementById("userEmail").textContent = session.email || "";
+    }
+    document.getElementById("btnLogout").addEventListener("click", () => {
+      SkylineAuth.logout("index.html");
+    });
+
+    const API_URL = SkylinePrecos.API_LISTA_PRECOS;
+    let allRows = [];
+    let viewRows = [];
+
+    /** Legenda de grades — textos de condição provisórios (atualiza quando mandar o definitivo). */
+    const GRADE_LEGEND = [
+      {
+        grade: "Excelente",
+        gradeStyle: "grade-a",
+        estetica: "Aparelho impecável, totalmente sem avarias ou marcas estéticas.",
+        funcional: "100% testado e funcional, pronto para uso imediato."
+      },
+      {
+        grade: "Muito Bom",
+        gradeStyle: "grade-b",
+        estetica: "Pode conter detalhes estéticos leves (como arranhões superficiais ou pequenos amassados).",
+        funcional: "100% funcional. Todos os recursos operam perfeitamente."
+      },
+      {
+        grade: "Bom",
+        gradeStyle: "grade-bom",
+        estetica: "Pode apresentar marcas de uso visíveis, arranhões ou pequenos amassados.",
+        funcional: "100% funcional. Todos os recursos operam normalmente."
+      },
+      {
+        grade: "Outlet",
+        gradeStyle: "grade-outlet",
+        estetica: "Pode possuir marcas de uso mais evidentes, leves avarias ou pequenas manchas no display.",
+        funcional: "Preço super reduzido. Pode possuir alguma função inoperante (como desbloqueio por reconhecimento facial ou leitor digital)."
+      }
+    ];
+
+    function renderGradeLegend() {
+      const tbody = document.getElementById("gradeLegendBody");
+      if (!tbody) return;
+      tbody.innerHTML = GRADE_LEGEND.map((r) => `
+        <tr>
+          <td class="grade ${r.gradeStyle}">${escapeHtml(r.grade)}</td>
+          <td class="note">${escapeHtml(r.estetica)}</td>
+          <td class="note">${escapeHtml(r.funcional)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function shortDescricao(produto) {
+      const s = String(produto || "").trim();
+      if (!s) return "—";
+      const idx = s.indexOf("-");
+      if (idx < 0) return s;
+      const left = s.slice(0, idx).trim();
+      return left || s;
+    }
+
+    function parseMoney(v) {
+      if (v == null || v === "") return null;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      let s = String(v).trim().replace(/R\$\s?/gi, "").replace(/\s/g, "");
+      if (!s) return null;
+      if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+      else if (s.includes(",")) s = s.replace(",", ".");
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function formatMoney(v) {
+      if (v == null || !Number.isFinite(v)) return "—";
+      return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function mapRow(raw) {
+      const valor = parseMoney(raw["Preco Tabela 1"] ?? raw.preco_tabela_1 ?? raw.PrecoTabela1);
+      return {
+        sku: String(raw.SKU ?? raw.sku ?? "").trim(),
+        descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
+        produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
+        marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
+        qualidade: String(raw.Qualidade ?? raw.qualidade ?? "").trim() || "—",
+        valor
+      };
+    }
+
+    function gradeClass(qualidade) {
+      const k = String(qualidade || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      if (!k || k === "—") return "";
+      if (k.includes("outlet")) return "grade-outlet";
+      if (k.includes("excelente") || k.includes("grade a") || k.includes("premium a")) return "grade-a";
+      if (k.includes("muito bom") || k.includes("grade b") || k.includes("premium b")) return "grade-b";
+      if (k === "bom" || k.includes("grade c") || /(^|\s)bom(\s|$)/.test(k)) return "grade-bom";
+      return "";
+    }
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = msg || "";
+      el.classList.toggle("err", Boolean(isError));
+    }
+
+    function fillSelect(id, values) {
+      const el = document.getElementById(id);
+      const cur = el.value;
+      const sorted = [...new Set(values.filter((v) => v && v !== "—"))]
+        .sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+      el.innerHTML = `<option value="">Todas</option>` + sorted.map((v) =>
+        `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`
+      ).join("");
+      if (cur && sorted.includes(cur)) el.value = cur;
+    }
+
+    function fillFilterOptions() {
+      fillSelect("filterMarca", allRows.map((r) => r.marca));
+      fillSelect("filterQualidade", allRows.map((r) => r.qualidade));
+    }
+
+    function applyFilter() {
+      const q = String(document.getElementById("filterSearch").value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const marca = document.getElementById("filterMarca").value;
+      const qualidade = document.getElementById("filterQualidade").value;
+
+      viewRows = allRows.filter((r) => {
+        if (marca && r.marca !== marca) return false;
+        if (qualidade && r.qualidade !== qualidade) return false;
+        if (!q) return true;
+        const blob = `${r.sku} ${r.descricao} ${r.marca} ${r.qualidade} ${r.produtoFull}`
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return blob.includes(q);
+      });
+      renderTable();
+    }
+
+    function renderKpis() {
+      document.getElementById("kpiTotal").textContent = String(allRows.length);
+      document.getElementById("kpiVisible").textContent = String(viewRows.length);
+      const marcas = new Set(allRows.map((r) => r.marca).filter((m) => m && m !== "—"));
+      document.getElementById("kpiMarcas").textContent = String(marcas.size);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      renderKpis();
+      if (!viewRows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">${
+          allRows.length ? "Nenhum item no filtro." : "Sem itens na lista de preços."
+        }</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = viewRows.map((r) => {
+        const gClass = gradeClass(r.qualidade);
+        return `
+        <tr>
+          <td class="sku">${escapeHtml(r.sku || "—")}</td>
+          <td class="desc">${escapeHtml(r.descricao)}</td>
+          <td>${escapeHtml(r.marca)}</td>
+          <td class="${gClass}">${escapeHtml(r.qualidade)}</td>
+          <td class="money">${escapeHtml(formatMoney(r.valor))}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function xmlEscape(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function excelCellText(value, styleId) {
+      const style = styleId ? ` ss:StyleID="${styleId}"` : "";
+      return `<Cell${style}><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`;
+    }
+
+    function excelCellNumber(value, styleId) {
+      if (value == null || !Number.isFinite(value)) {
+        return excelCellText("", styleId);
+      }
+      const style = styleId ? ` ss:StyleID="${styleId}"` : "";
+      return `<Cell${style}><Data ss:Type="Number">${value}</Data></Cell>`;
+    }
+
+    function gradeExcelStyle(qualidade) {
+      const cls = gradeClass(qualidade);
+      if (cls === "grade-a") return "GradeA";
+      if (cls === "grade-b") return "GradeB";
+      if (cls === "grade-bom") return "GradeBom";
+      if (cls === "grade-outlet") return "GradeOutlet";
+      return "Body";
+    }
+
+    function legendExcelRows() {
+      const head = [
+        excelCellText("GRADE", "Header"),
+        `<Cell ss:MergeAcross="1" ss:StyleID="Header"><Data ss:Type="String">CONDIÇÃO ESTÉTICA</Data></Cell>`,
+        `<Cell ss:MergeAcross="1" ss:StyleID="Header"><Data ss:Type="String">CONDIÇÃO FUNCIONAL</Data></Cell>`
+      ].join("");
+      const rows = GRADE_LEGEND.map((r) => {
+        const gStyle = r.gradeStyle === "grade-a"
+          ? "GradeA"
+          : r.gradeStyle === "grade-b"
+            ? "GradeB"
+            : r.gradeStyle === "grade-bom"
+              ? "GradeBom"
+              : "GradeOutlet";
+        return `<Row ss:Height="42">${[
+          excelCellText(r.grade, gStyle),
+          `<Cell ss:MergeAcross="1" ss:StyleID="BodyLeft"><Data ss:Type="String">${xmlEscape(r.estetica)}</Data></Cell>`,
+          `<Cell ss:MergeAcross="1" ss:StyleID="BodyLeft"><Data ss:Type="String">${xmlEscape(r.funcional)}</Data></Cell>`
+        ].join("")}</Row>`;
+      }).join("");
+      return `<Row ss:Height="26">${head}</Row>${rows}`;
+    }
+
+    function downloadExcel() {
+      const rows = viewRows.length ? viewRows : allRows;
+      if (!rows.length) {
+        alert("Nenhum item para exportar.");
+        return;
+      }
+
+      const header = [
+        "SKU",
+        "Descrição",
+        "Marca",
+        "Qualidade",
+        "Valor do produto"
+      ].map((h) => excelCellText(h, "Header")).join("");
+
+      const body = rows.map((r) => {
+        const gStyle = gradeExcelStyle(r.qualidade);
+        const cells = [
+          excelCellText(r.sku, "BodyLeft"),
+          excelCellText(r.descricao, "BodyLeft"),
+          excelCellText(r.marca, "Body"),
+          excelCellText(r.qualidade, gStyle),
+          excelCellNumber(r.valor, "Money")
+        ].join("");
+        return `<Row>${cells}</Row>`;
+      }).join("");
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filename = `lista-precos-${stamp}.xls`;
+
+      const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Title>Lista de Preços</Title>
+  <Author>Skyline Lista de Preços</Author>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Font ss:FontName="Calibri" ss:Size="11"/>
+  </Style>
+  <Style ss:ID="Brand">
+   <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#4B2E83"/>
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="TopBar">
+   <Font ss:FontName="Calibri" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#4B2E83" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#4B2E83" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Body">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="BodyBold">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Font ss:Bold="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="BodyLeft">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="Money">
+   <NumberFormat ss:Format="R$ #,##0.00"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Font ss:Bold="1" ss:Color="#4B2E83"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="GradeA">
+   <Font ss:Bold="1" ss:Color="#1F7A1F"/>
+   <Interior ss:Color="#D9F2D0" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="GradeB">
+   <Font ss:Bold="1" ss:Color="#1F4F9A"/>
+   <Interior ss:Color="#D6E8FB" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="GradeBom">
+   <Font ss:Bold="1" ss:Color="#5B3D8F"/>
+   <Interior ss:Color="#EBE4F7" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+  <Style ss:ID="GradeOutlet">
+   <Font ss:Bold="1" ss:Color="#C45A12"/>
+   <Interior ss:Color="#FDE7C7" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+   <Borders>
+    <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D9D2E8"/>
+   </Borders>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Lista de Precos">
+  <Table>
+   <Column ss:Width="150"/>
+   <Column ss:Width="160"/>
+   <Column ss:Width="180"/>
+   <Column ss:Width="180"/>
+   <Column ss:Width="220"/>
+   <Row ss:Height="28">
+    <Cell ss:MergeAcross="4" ss:StyleID="Brand"><Data ss:Type="String">Skyline mobile</Data></Cell>
+   </Row>
+   <Row ss:Height="8">
+    <Cell ss:MergeAcross="4" ss:StyleID="TopBar"><Data ss:Type="String"></Data></Cell>
+   </Row>
+   ${legendExcelRows()}
+   <Row ss:Height="10">
+    <Cell ss:MergeAcross="4"><Data ss:Type="String"></Data></Cell>
+   </Row>
+   <Row ss:Height="28" ss:StyleID="Header">${header}</Row>
+   ${body}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+      const blob = new Blob([xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    }
+
+    async function loadData() {
+      setStatus("Carregando lista de preços…");
+      document.getElementById("btnReload").disabled = true;
+      document.getElementById("btnExcel").disabled = true;
+      try {
+        const json = await SkylinePrecos.fetchWebhook(API_URL);
+        const rawRows = SkylinePrecos.normalizeRows(json);
+        allRows = rawRows
+          .map(mapRow)
+          .filter((r) => r.sku || r.descricao !== "—")
+          .sort((a, b) =>
+            String(a.marca).localeCompare(String(b.marca), "pt-BR") ||
+            String(a.descricao).localeCompare(String(b.descricao), "pt-BR") ||
+            String(a.sku).localeCompare(String(b.sku), "pt-BR")
+          );
+        document.getElementById("metaStamp").textContent =
+          `${allRows.length} item(ns) · atualizado ${new Date().toLocaleString("pt-BR")}`;
+        fillFilterOptions();
+        applyFilter();
+        setStatus(`${allRows.length} item(ns) carregado(s).`);
+      } catch (err) {
+        allRows = [];
+        viewRows = [];
+        fillFilterOptions();
+        renderTable();
+        setStatus(`Erro: ${err.message}`, true);
+        document.getElementById("tableBody").innerHTML =
+          `<tr><td colspan="5" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
+      } finally {
+        document.getElementById("btnReload").disabled = false;
+        document.getElementById("btnExcel").disabled = false;
+      }
+    }
+
+    document.getElementById("btnReload").addEventListener("click", loadData);
+    document.getElementById("btnExcel").addEventListener("click", downloadExcel);
+    document.getElementById("filterSearch").addEventListener("input", applyFilter);
+    document.getElementById("filterMarca").addEventListener("change", applyFilter);
+    document.getElementById("filterQualidade").addEventListener("change", applyFilter);
+
+    if (typeof SkylineVersion !== "undefined") SkylineVersion.start(60000);
+    renderGradeLegend();
+    loadData();
+  </script>
+</body>
+</html>
