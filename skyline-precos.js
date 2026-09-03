@@ -21,6 +21,68 @@ const SkylinePrecos = {
     return [];
   },
 
+  /** Normaliza nome de campo da API (acentos/espaços/pontuação). */
+  normFieldKey(key) {
+    return String(key || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "");
+  },
+
+  /**
+   * Lê preço mesmo se o n8n renomear o campo.
+   * kind: "atacado" | "loja"
+   */
+  pickPriceValue(raw, kind) {
+    if (!raw || typeof raw !== "object") return null;
+    const exact =
+      kind === "loja"
+        ? [
+            "Preco Venda (Credito)",
+            "Preço Venda (Credito)",
+            "Preco Venda (Crédito)",
+            "Preço Venda (Crédito)",
+            "Preco Credito",
+            "Preço Crédito",
+            "preco_venda_credito",
+            "preco_credito",
+            "PrecoCredito"
+          ]
+        : [
+            "Preco Venda (Tabela 1)",
+            "Preço Venda (Tabela 1)",
+            "Preco Tabela 1",
+            "Preço Tabela 1",
+            "preco_venda_tabela_1",
+            "preco_tabela_1",
+            "PrecoTabela1"
+          ];
+    for (const key of exact) {
+      if (Object.prototype.hasOwnProperty.call(raw, key) && raw[key] != null && raw[key] !== "") {
+        return raw[key];
+      }
+    }
+    const want =
+      kind === "loja"
+        ? ["precovendacredito", "precocredito"]
+        : ["precovendatabela1", "precotabela1"];
+    for (const [key, value] of Object.entries(raw)) {
+      if (value == null || value === "") continue;
+      const nk = this.normFieldKey(key);
+      if (want.some((w) => nk === w || nk.endsWith(w))) return value;
+    }
+    // fallback frouxo: qualquer campo de preço de venda que cite tabela 1 / credito
+    for (const [key, value] of Object.entries(raw)) {
+      if (value == null || value === "") continue;
+      const nk = this.normFieldKey(key);
+      if (!nk.includes("preco")) continue;
+      if (kind === "loja" && nk.includes("credito")) return value;
+      if (kind !== "loja" && nk.includes("tabela") && nk.includes("1")) return value;
+    }
+    return null;
+  },
+
   async fetchWebhook(url, timeoutMs = this.DEFAULT_FETCH_TIMEOUT_MS) {
     const sep = url.includes("?") ? "&" : "?";
     const controller = new AbortController();

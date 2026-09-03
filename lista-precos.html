@@ -7,8 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="skyline-version.js?v=1"></script>
-  <script src="skyline-precos.js?v=2"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <script src="skyline-version.js?v=202609031020"></script>
+  <script src="skyline-precos.js?v=202609031020"></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -575,20 +576,8 @@
     }
 
     function mapRow(raw) {
-      const valor = parseMoney(
-        raw["Preco Venda (Tabela 1)"] ??
-          raw["Preco Tabela 1"] ??
-          raw.preco_venda_tabela_1 ??
-          raw.preco_tabela_1 ??
-          raw.PrecoTabela1
-      );
-      const credito = parseMoney(
-        raw["Preco Venda (Credito)"] ??
-          raw["Preco Credito"] ??
-          raw.preco_venda_credito ??
-          raw.preco_credito ??
-          raw.PrecoCredito
-      );
+      const valor = parseMoney(SkylinePrecos.pickPriceValue(raw, "atacado"));
+      const credito = parseMoney(SkylinePrecos.pickPriceValue(raw, "loja"));
       return {
         sku: String(raw.SKU ?? raw.sku ?? "").trim(),
         descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
@@ -913,11 +902,12 @@
             String(a.descricao).localeCompare(String(b.descricao), "pt-BR") ||
             String(a.sku).localeCompare(String(b.sku), "pt-BR")
           );
+        const comPreco = allRows.filter((r) => r.valor != null || r.credito != null).length;
         document.getElementById("metaStamp").textContent =
-          `${allRows.length} item(ns) · atualizado ${new Date().toLocaleString("pt-BR")}`;
+          `${allRows.length} item(ns) · ${comPreco} com preço · atualizado ${new Date().toLocaleString("pt-BR")}`;
         fillFilterOptions();
         applyFilter();
-        setStatus(`${allRows.length} item(ns) carregado(s).`);
+        setStatus(`${allRows.length} item(ns) · ${comPreco} com Atacado/Loja.`);
       } catch (err) {
         allRows = [];
         viewRows = [];
