@@ -561,14 +561,32 @@
       return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
     }
 
+    function qualidadeFromProduto(produto) {
+      const s = String(produto || "").trim();
+      const m = s.match(/\s-\s(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i);
+      return m ? m[1].toUpperCase() : "";
+    }
+
+    function resolveQualidade(raw) {
+      const fromField = String(raw.Qualidade ?? raw.qualidade ?? "").trim();
+      if (fromField) return fromField;
+      return qualidadeFromProduto(raw.Produto ?? raw.produto ?? raw.descricao) || "—";
+    }
+
     function mapRow(raw) {
-      const valor = parseMoney(raw["Preco Tabela 1"] ?? raw.preco_tabela_1 ?? raw.PrecoTabela1);
+      const valor = parseMoney(
+        raw["Preco Venda (Tabela 1)"] ??
+          raw["Preco Tabela 1"] ??
+          raw.preco_venda_tabela_1 ??
+          raw.preco_tabela_1 ??
+          raw.PrecoTabela1
+      );
       return {
         sku: String(raw.SKU ?? raw.sku ?? "").trim(),
         descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
         produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
         marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
-        qualidade: String(raw.Qualidade ?? raw.qualidade ?? "").trim() || "—",
+        qualidade: resolveQualidade(raw),
         valor
       };
     }
