@@ -474,11 +474,10 @@
               <th>Marca</th>
               <th>Qualidade</th>
               <th>Atacado</th>
-              <th>Loja</th>
             </tr>
           </thead>
           <tbody id="tableBody">
-            <tr><td colspan="6" class="loading">Carregando lista…</td></tr>
+            <tr><td colspan="5" class="loading">Carregando lista…</td></tr>
           </tbody>
         </table>
       </div>
@@ -577,15 +576,13 @@
 
     function mapRow(raw) {
       const valor = parseMoney(SkylinePrecos.pickPriceValue(raw, "atacado"));
-      const credito = parseMoney(SkylinePrecos.pickPriceValue(raw, "loja"));
       return {
         sku: String(raw.SKU ?? raw.sku ?? "").trim(),
         descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
         produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
         marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
         qualidade: resolveQualidade(raw),
-        valor,
-        credito
+        valor
       };
     }
 
@@ -658,7 +655,7 @@
       const tbody = document.getElementById("tableBody");
       renderKpis();
       if (!viewRows.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty">${
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">${
           allRows.length ? "Nenhum item no filtro." : "Sem itens na lista de preços."
         }</td></tr>`;
         return;
@@ -672,7 +669,6 @@
           <td>${escapeHtml(r.marca)}</td>
           <td class="${gClass}">${escapeHtml(r.qualidade)}</td>
           <td class="money">${escapeHtml(formatMoney(r.valor))}</td>
-          <td class="money">${escapeHtml(formatMoney(r.credito))}</td>
         </tr>`;
       }).join("");
     }
@@ -728,7 +724,7 @@
       }
 
       const sheetRows = [];
-      const merges = ["A1:F1", "A2:F2", "B3:C3", "D3:E3", "A8:F8"];
+      const merges = ["A1:E1", "A2:E2", "B3:C3", "D3:E3", "A8:E8"];
       sheetRows.push(xlsxRow(1, 22, xlsxText(1, 1, 1, "Skyline mobile")));
       sheetRows.push(xlsxRow(2, 8, xlsxText(1, 2, 2, "")));
       sheetRows.push(xlsxRow(3, 22, [
@@ -753,8 +749,7 @@
         xlsxText(2, 9, 3, "Descrição"),
         xlsxText(3, 9, 3, "Marca"),
         xlsxText(4, 9, 3, "Qualidade"),
-        xlsxText(5, 9, 3, "Atacado"),
-        xlsxText(6, 9, 3, "Loja")
+        xlsxText(5, 9, 3, "Atacado")
       ].join("")));
 
       rows.forEach((item, idx) => {
@@ -764,8 +759,7 @@
           xlsxText(2, r, 5, item.descricao),
           xlsxText(3, r, 4, item.marca),
           xlsxText(4, r, gradeExcelStyle(item.qualidade), item.qualidade),
-          xlsxNumber(5, r, 6, item.valor),
-          xlsxNumber(6, r, 6, item.credito)
+          xlsxNumber(5, r, 6, item.valor)
         ].join("")));
       });
 
@@ -773,7 +767,7 @@
       const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <dimension ref="A1:F${lastRow}"/>
+  <dimension ref="A1:E${lastRow}"/>
   <sheetViews><sheetView workbookViewId="0" tabSelected="1"/></sheetViews>
   <sheetFormatPr defaultRowHeight="18"/>
   <cols>
@@ -782,7 +776,6 @@
     <col min="3" max="3" width="16" customWidth="1"/>
     <col min="4" max="4" width="16" customWidth="1"/>
     <col min="5" max="5" width="16" customWidth="1"/>
-    <col min="6" max="6" width="16" customWidth="1"/>
   </cols>
   <sheetData>
     ${sheetRows.join("")}
@@ -896,18 +889,18 @@
         const rawRows = SkylinePrecos.normalizeRows(json);
         allRows = rawRows
           .map(mapRow)
-          .filter((r) => r.sku || r.descricao !== "—")
+          .filter((r) => /^CEL/i.test(String(r.sku || "").trim()))
           .sort((a, b) =>
             String(a.marca).localeCompare(String(b.marca), "pt-BR") ||
             String(a.descricao).localeCompare(String(b.descricao), "pt-BR") ||
             String(a.sku).localeCompare(String(b.sku), "pt-BR")
           );
-        const comPreco = allRows.filter((r) => r.valor != null || r.credito != null).length;
+        const comPreco = allRows.filter((r) => r.valor != null).length;
         document.getElementById("metaStamp").textContent =
-          `${allRows.length} item(ns) · ${comPreco} com preço · atualizado ${new Date().toLocaleString("pt-BR")}`;
+          `${allRows.length} item(ns) CEL · ${comPreco} com preço · atualizado ${new Date().toLocaleString("pt-BR")}`;
         fillFilterOptions();
         applyFilter();
-        setStatus(`${allRows.length} item(ns) · ${comPreco} com Atacado/Loja.`);
+        setStatus(`${allRows.length} item(ns) CEL · ${comPreco} com Atacado.`);
       } catch (err) {
         allRows = [];
         viewRows = [];
@@ -915,7 +908,7 @@
         renderTable();
         setStatus(`Erro: ${err.message}`, true);
         document.getElementById("tableBody").innerHTML =
-          `<tr><td colspan="6" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
+          `<tr><td colspan="5" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
       } finally {
         document.getElementById("btnReload").disabled = false;
         document.getElementById("btnExcel").disabled = false;
