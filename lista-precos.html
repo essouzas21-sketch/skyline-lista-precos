@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista de Preços — Skyline</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <script src="skyline-version.js?v=202609031020"></script>
+  <script src="skyline-precos.js?v=202609031020"></script>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --bg-2: #f4f7fb;
+      --panel: #ffffff;
+      --panel-2: #f7f9fc;
+      --line: rgba(15, 40, 70, 0.12);
+      --text: #15202b;
+      --muted: #5b6b7f;
+      --cyan: #0b8ec4;
+      --soft: rgba(15, 40, 70, 0.04);
+      --radius: 14px;
+      --shadow: 0 8px 28px rgba(15, 40, 70, 0.08);
+      --font-display: "Orbitron", sans-serif;
+      --font-body: "Exo 2", sans-serif;
+      --purple: #4b2e83;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(75, 46, 131, 0.08), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(11, 142, 196, 0.05), transparent 50%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 4px 18px rgba(15, 40, 70, 0.04);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-block img {
+      height: 34px;
+      width: auto;
+      display: block;
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-text strong {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--purple);
+    }
+
+    .brand-text span {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .search-box input {
+      flex: 1;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 14px;
+      font: inherit;
+      font-size: 0.95rem;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: rgba(75, 46, 131, 0.45);
+      box-shadow: 0 0 0 3px rgba(75, 46, 131, 0.12);
+    }
+
+    .btn {
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 16px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #4b2e83, #7c5cbf);
+      color: #ffffff;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .main {
+      width: min(1200px, 100%);
+      margin: 0 auto;
+      padding: 18px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .filters-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-field {
+      display: grid;
+      gap: 4px;
+      min-width: 160px;
+    }
+
+    .filter-field label {
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .filter-field select {
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0 12px;
+      font: inherit;
+      font-size: 0.9rem;
+      min-width: 180px;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+    }
+
+    .stat .lab {
+      font-size: 0.64rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .stat .val {
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      letter-spacing: 0.03em;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 16px;
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .sheet-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 4px 14px;
+    }
+
+    .sheet-brand img {
+      height: 36px;
+      width: auto;
+      display: block;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      flex: 1;
+      min-height: 360px;
+      max-height: calc(100vh - 320px);
+      border: 1px solid #d9d2e8;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+    }
+
+    th, td {
+      text-align: center;
+      padding: 10px 12px;
+      border: 1px solid #d9d2e8;
+      vertical-align: middle;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #4b2e83;
+      color: #ffffff;
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    td {
+      background: #ffffff;
+      color: #2b2438;
+    }
+
+    td.sku {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      text-align: left;
+    }
+
+    td.desc {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    td.money {
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      white-space: nowrap;
+      color: #4b2e83;
+    }
+
+    td.grade-a {
+      background: #d9f2d0;
+      color: #1f7a1f;
+      font-weight: 800;
+    }
+
+    td.grade-b {
+      background: #d6e8fb;
+      color: #1f4f9a;
+      font-weight: 800;
+    }
+
+    td.grade-bom {
+      background: #ebe4f7;
+      color: #5b3d8f;
+      font-weight: 800;
+    }
+
+    td.grade-outlet {
+      background: #fde7c7;
+      color: #c45a12;
+      font-weight: 800;
+    }
+
+    tr:hover td:not([class*="grade-"]) { background: #f7f3fc; }
+
+    .legend-wrap {
+      margin: 0 0 14px;
+      overflow: auto;
+      border: 1px solid #d9d2e8;
+      border-radius: 8px;
+    }
+
+    .legend-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+
+    .legend-table th,
+    .legend-table td {
+      border: 1px solid #d9d2e8;
+      padding: 8px 10px;
+      vertical-align: middle;
+    }
+
+    .legend-table th {
+      background: #4b2e83;
+      color: #fff;
+      font-size: 0.64rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 800;
+      text-align: center;
+      position: static;
+    }
+
+    .legend-table td.grade {
+      text-align: center;
+      font-weight: 800;
+      white-space: nowrap;
+      width: 140px;
+    }
+
+    .legend-table td.note {
+      text-align: left;
+      color: #2b2438;
+      line-height: 1.35;
+    }
+
+    .empty, .loading, .error {
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.92rem;
+      border: 0 !important;
+    }
+
+    .error { color: #e03131; }
+
+    .status {
+      font-size: 0.78rem;
+      color: var(--muted);
+      min-height: 1.2em;
+    }
+
+    .status.err { color: #e03131; }
+
+    @media (max-width: 980px) {
+      .hero-stats { grid-template-columns: 1fr; }
+      .table-wrap { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-top">
+    <div class="brand-block">
+      <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="108" height="34" />
+      <div class="brand-text">
+        <strong>Lista de Preços</strong>
+        <span id="metaStamp">—</span>
+      </div>
+    </div>
+
+    <div class="search-box">
+      <input
+        id="filterSearch"
+        type="search"
+        placeholder="Buscar SKU, descrição, marca ou qualidade…"
+        autocomplete="off"
+      />
+      <button class="btn" type="button" id="btnReload">Atualizar</button>
+      <button class="btn ghost" type="button" id="btnExcel" title="Baixar planilha (.xlsx)">
+        Excel
+      </button>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="filters-row">
+      <div class="filter-field">
+        <label for="filterMarca">Marca</label>
+        <select id="filterMarca">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label for="filterQualidade">Qualidade</label>
+        <select id="filterQualidade">
+          <option value="">Todas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="status" id="statusMsg">Carregando…</div>
+
+    <section class="hero-stats">
+      <div class="stat">
+        <div class="lab">Itens listados</div>
+        <div class="val" id="kpiTotal">0</div>
+      </div>
+      <div class="stat">
+        <div class="lab">Marcas</div>
+        <div class="val" id="kpiMarcas">0</div>
+      </div>
+      <div class="stat">
+        <div class="lab">Exibindo (filtro)</div>
+        <div class="val" id="kpiVisible">0</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="sheet-brand">
+        <img src="assets/skyline-logo-wordmark.png" alt="Skyline mobile" width="120" height="38" />
+      </div>
+      <div class="legend-wrap">
+        <table class="legend-table" id="gradeLegendTable">
+          <thead>
+            <tr>
+              <th>Grade</th>
+              <th>Condição estética</th>
+              <th>Condição funcional</th>
+            </tr>
+          </thead>
+          <tbody id="gradeLegendBody"></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Descrição</th>
+              <th>Marca</th>
+              <th>Qualidade</th>
+              <th>Atacado</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="5" class="loading">Carregando lista…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = SkylinePrecos.API_LISTA_PRECOS;
+    let allRows = [];
+    let viewRows = [];
+
+    /** Legenda de grades — textos de condição provisórios (atualiza quando mandar o definitivo). */
+    const GRADE_LEGEND = [
+      {
+        grade: "Excelente",
+        gradeStyle: "grade-a",
+        estetica: "Aparelho impecável, totalmente sem avarias ou marcas estéticas.",
+        funcional: "100% testado e funcional, pronto para uso imediato."
+      },
+      {
+        grade: "Muito Bom",
+        gradeStyle: "grade-b",
+        estetica: "Pode conter detalhes estéticos leves (como arranhões superficiais ou pequenos amassados).",
+        funcional: "100% funcional. Todos os recursos operam perfeitamente."
+      },
+      {
+        grade: "Bom",
+        gradeStyle: "grade-bom",
+        estetica: "Pode apresentar marcas de uso visíveis, arranhões ou pequenos amassados.",
+        funcional: "100% funcional. Todos os recursos operam normalmente."
+      },
+      {
+        grade: "Outlet",
+        gradeStyle: "grade-outlet",
+        estetica: "Pode possuir marcas de uso mais evidentes, leves avarias ou pequenas manchas no display.",
+        funcional: "Preço super reduzido. Pode possuir alguma função inoperante (como desbloqueio por reconhecimento facial ou leitor digital)."
+      }
+    ];
+
+    function renderGradeLegend() {
+      const tbody = document.getElementById("gradeLegendBody");
+      if (!tbody) return;
+      tbody.innerHTML = GRADE_LEGEND.map((r) => `
+        <tr>
+          <td class="grade ${r.gradeStyle}">${escapeHtml(r.grade)}</td>
+          <td class="note">${escapeHtml(r.estetica)}</td>
+          <td class="note">${escapeHtml(r.funcional)}</td>
+        </tr>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function shortDescricao(produto) {
+      const s = String(produto || "").trim();
+      if (!s) return "—";
+      const idx = s.indexOf("-");
+      if (idx < 0) return s;
+      const left = s.slice(0, idx).trim();
+      return left || s;
+    }
+
+    function parseMoney(v) {
+      if (v == null || v === "") return null;
+      if (typeof v === "number" && Number.isFinite(v)) return v;
+      let s = String(v).trim().replace(/R\$\s?/gi, "").replace(/\s/g, "");
+      if (!s) return null;
+      if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+      else if (s.includes(",")) s = s.replace(",", ".");
+      const n = Number(s);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    function formatMoney(v) {
+      if (v == null || !Number.isFinite(v)) return "—";
+      return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function qualidadeFromProduto(produto) {
+      const s = String(produto || "").trim();
+      const m = s.match(/\s-\s(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i);
+      return m ? m[1].toUpperCase() : "";
+    }
+
+    function resolveQualidade(raw) {
+      const fromField = String(raw.Qualidade ?? raw.qualidade ?? "").trim();
+      if (fromField) return fromField;
+      return qualidadeFromProduto(raw.Produto ?? raw.produto ?? raw.descricao) || "—";
+    }
+
+    function mapRow(raw) {
+      const valor = parseMoney(SkylinePrecos.pickPriceValue(raw, "atacado"));
+      return {
+        sku: String(raw.SKU ?? raw.sku ?? "").trim(),
+        descricao: shortDescricao(raw.Produto ?? raw.produto ?? raw.descricao),
+        produtoFull: String(raw.Produto ?? raw.produto ?? "").trim(),
+        marca: String(raw.Marca ?? raw.marca ?? "").trim() || "—",
+        qualidade: resolveQualidade(raw),
+        valor
+      };
+    }
+
+    function gradeClass(qualidade) {
+      const k = String(qualidade || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      if (!k || k === "—") return "";
+      if (k.includes("outlet")) return "grade-outlet";
+      if (k.includes("excelente") || k.includes("grade a") || k.includes("premium a")) return "grade-a";
+      if (k.includes("muito bom") || k.includes("grade b") || k.includes("premium b")) return "grade-b";
+      if (k === "bom" || k.includes("grade c") || /(^|\s)bom(\s|$)/.test(k)) return "grade-bom";
+      return "";
+    }
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById("statusMsg");
+      el.textContent = msg || "";
+      el.classList.toggle("err", Boolean(isError));
+    }
+
+    function fillSelect(id, values) {
+      const el = document.getElementById(id);
+      const cur = el.value;
+      const sorted = [...new Set(values.filter((v) => v && v !== "—"))]
+        .sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+      el.innerHTML = `<option value="">Todas</option>` + sorted.map((v) =>
+        `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`
+      ).join("");
+      if (cur && sorted.includes(cur)) el.value = cur;
+    }
+
+    function fillFilterOptions() {
+      fillSelect("filterMarca", allRows.map((r) => r.marca));
+      fillSelect("filterQualidade", allRows.map((r) => r.qualidade));
+    }
+
+    function applyFilter() {
+      const q = String(document.getElementById("filterSearch").value || "")
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const marca = document.getElementById("filterMarca").value;
+      const qualidade = document.getElementById("filterQualidade").value;
+
+      viewRows = allRows.filter((r) => {
+        if (marca && r.marca !== marca) return false;
+        if (qualidade && r.qualidade !== qualidade) return false;
+        if (!q) return true;
+        const blob = `${r.sku} ${r.descricao} ${r.marca} ${r.qualidade} ${r.produtoFull}`
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+        return blob.includes(q);
+      });
+      renderTable();
+    }
+
+    function renderKpis() {
+      document.getElementById("kpiTotal").textContent = String(allRows.length);
+      document.getElementById("kpiVisible").textContent = String(viewRows.length);
+      const marcas = new Set(allRows.map((r) => r.marca).filter((m) => m && m !== "—"));
+      document.getElementById("kpiMarcas").textContent = String(marcas.size);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      renderKpis();
+      if (!viewRows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty">${
+          allRows.length ? "Nenhum item no filtro." : "Sem itens na lista de preços."
+        }</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = viewRows.map((r) => {
+        const gClass = gradeClass(r.qualidade);
+        return `
+        <tr>
+          <td class="sku">${escapeHtml(r.sku || "—")}</td>
+          <td class="desc">${escapeHtml(r.descricao)}</td>
+          <td>${escapeHtml(r.marca)}</td>
+          <td class="${gClass}">${escapeHtml(r.qualidade)}</td>
+          <td class="money">${escapeHtml(formatMoney(r.valor))}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    function xmlEscape(s) {
+      return String(s ?? "")
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function xlsxCellRef(col, row) {
+      return String.fromCharCode(64 + col) + row;
+    }
+
+    function xlsxText(col, row, style, value) {
+      return `<c r="${xlsxCellRef(col, row)}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+    }
+
+    function xlsxNumber(col, row, style, value) {
+      if (value == null || !Number.isFinite(value)) return xlsxText(col, row, style, "");
+      return `<c r="${xlsxCellRef(col, row)}" s="${style}"><v>${value}</v></c>`;
+    }
+
+    function xlsxRow(r, height, cells) {
+      const ht = height ? ` ht="${height}" customHeight="1"` : "";
+      return `<row r="${r}"${ht}>${cells}</row>`;
+    }
+
+    function gradeExcelStyle(qualidade) {
+      const cls = gradeClass(qualidade);
+      if (cls === "grade-a") return 7;
+      if (cls === "grade-b") return 8;
+      if (cls === "grade-bom") return 9;
+      if (cls === "grade-outlet") return 10;
+      return 4;
+    }
+
+    function legendGradeStyle(gradeStyle) {
+      if (gradeStyle === "grade-a") return 7;
+      if (gradeStyle === "grade-b") return 8;
+      if (gradeStyle === "grade-bom") return 9;
+      return 10;
+    }
+
+    async function downloadExcel() {
+      const rows = viewRows.length ? viewRows : allRows;
+      if (!rows.length) {
+        alert("Nenhum item para exportar.");
+        return;
+      }
+
+      const sheetRows = [];
+      const merges = ["A1:E1", "A2:E2", "B3:C3", "D3:E3", "A8:E8"];
+      sheetRows.push(xlsxRow(1, 22, xlsxText(1, 1, 1, "Skyline mobile")));
+      sheetRows.push(xlsxRow(2, 8, xlsxText(1, 2, 2, "")));
+      sheetRows.push(xlsxRow(3, 22, [
+        xlsxText(1, 3, 3, "GRADE"),
+        xlsxText(2, 3, 3, "CONDIÇÃO ESTÉTICA"),
+        xlsxText(4, 3, 3, "CONDIÇÃO FUNCIONAL")
+      ].join("")));
+
+      GRADE_LEGEND.forEach((item, idx) => {
+        const r = 4 + idx;
+        merges.push(`B${r}:C${r}`, `D${r}:E${r}`);
+        sheetRows.push(xlsxRow(r, 36, [
+          xlsxText(1, r, legendGradeStyle(item.gradeStyle), item.grade),
+          xlsxText(2, r, 5, item.estetica),
+          xlsxText(4, r, 5, item.funcional)
+        ].join("")));
+      });
+
+      sheetRows.push(xlsxRow(8, 10, xlsxText(1, 8, 0, "")));
+      sheetRows.push(xlsxRow(9, 22, [
+        xlsxText(1, 9, 3, "SKU"),
+        xlsxText(2, 9, 3, "Descrição"),
+        xlsxText(3, 9, 3, "Marca"),
+        xlsxText(4, 9, 3, "Qualidade"),
+        xlsxText(5, 9, 3, "Atacado")
+      ].join("")));
+
+      rows.forEach((item, idx) => {
+        const r = 10 + idx;
+        sheetRows.push(xlsxRow(r, 18, [
+          xlsxText(1, r, 5, item.sku),
+          xlsxText(2, r, 5, item.descricao),
+          xlsxText(3, r, 4, item.marca),
+          xlsxText(4, r, gradeExcelStyle(item.qualidade), item.qualidade),
+          xlsxNumber(5, r, 6, item.valor)
+        ].join("")));
+      });
+
+      const lastRow = 9 + rows.length;
+      const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <dimension ref="A1:E${lastRow}"/>
+  <sheetViews><sheetView workbookViewId="0" tabSelected="1"/></sheetViews>
+  <sheetFormatPr defaultRowHeight="18"/>
+  <cols>
+    <col min="1" max="1" width="22" customWidth="1"/>
+    <col min="2" max="2" width="42" customWidth="1"/>
+    <col min="3" max="3" width="16" customWidth="1"/>
+    <col min="4" max="4" width="16" customWidth="1"/>
+    <col min="5" max="5" width="16" customWidth="1"/>
+  </cols>
+  <sheetData>
+    ${sheetRows.join("")}
+  </sheetData>
+  <mergeCells count="${merges.length}">
+    ${merges.map((ref) => `<mergeCell ref="${ref}"/>`).join("")}
+  </mergeCells>
+</worksheet>`;
+
+      const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+
+      const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+      const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+      const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+ xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Lista de Precos" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+
+      const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00"/></numFmts>
+  <fonts count="8">
+    <font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
+    <font><b/><sz val="16"/><color rgb="FF4B2E83"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF4B2E83"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF1F7A1F"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF1F4F9A"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FF5B3D8F"/><name val="Calibri"/></font>
+    <font><b/><sz val="11"/><color rgb="FFC45A12"/><name val="Calibri"/></font>
+  </fonts>
+  <fills count="7">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF4B2E83"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD9F2D0"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFD6E8FB"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEBE4F7"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFFDE7C7"/><bgColor indexed="64"/></patternFill></fill>
+  </fills>
+  <borders count="2">
+    <border><left/><right/><top/><bottom/><diagonal/></border>
+    <border>
+      <left style="thin"><color rgb="FFD9D2E8"/></left>
+      <right style="thin"><color rgb="FFD9D2E8"/></right>
+      <top style="thin"><color rgb="FFD9D2E8"/></top>
+      <bottom style="thin"><color rgb="FFD9D2E8"/></bottom>
+      <diagonal/>
+    </border>
+  </borders>
+  <cellStyleXfs count="1"><xf/></cellStyleXfs>
+  <cellXfs count="11">
+    <xf xfId="0"/>
+    <xf xfId="0" fontId="1" applyFont="1"/>
+    <xf xfId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf xfId="0" fontId="2" fillId="2" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" borderId="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="3" numFmtId="164" borderId="1" applyFont="1" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf xfId="0" fontId="4" fillId="3" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="5" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="6" fillId="5" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+    <xf xfId="0" fontId="7" fillId="6" borderId="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+  </cellXfs>
+</styleSheet>`;
+
+      const stamp = new Date().toISOString().slice(0, 10);
+      const filename = `lista-precos-${stamp}.xlsx`;
+      const btn = document.getElementById("btnExcel");
+      btn.disabled = true;
+      try {
+        const blob = await SkylinePrecos.makeXlsxBlob([
+          { name: "[Content_Types].xml", data: contentTypes },
+          { name: "_rels/.rels", data: rels },
+          { name: "xl/workbook.xml", data: workbook },
+          { name: "xl/_rels/workbook.xml.rels", data: workbookRels },
+          { name: "xl/worksheets/sheet1.xml", data: sheetXml },
+          { name: "xl/styles.xml", data: styles }
+        ]);
+        SkylinePrecos.saveBlob(blob, filename);
+      } catch (err) {
+        alert(`Falha ao gerar a planilha: ${err.message || err}`);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadData() {
+      setStatus("Carregando lista de preços…");
+      document.getElementById("btnReload").disabled = true;
+      document.getElementById("btnExcel").disabled = true;
+      try {
+        const json = await SkylinePrecos.fetchWebhook(API_URL);
+        const rawRows = SkylinePrecos.normalizeRows(json);
+        allRows = rawRows
+          .map(mapRow)
+          .filter((r) => /^CEL/i.test(String(r.sku || "").trim()))
+          .sort((a, b) =>
+            String(a.marca).localeCompare(String(b.marca), "pt-BR") ||
+            String(a.descricao).localeCompare(String(b.descricao), "pt-BR") ||
+            String(a.sku).localeCompare(String(b.sku), "pt-BR")
+          );
+        const comPreco = allRows.filter((r) => r.valor != null).length;
+        document.getElementById("metaStamp").textContent =
+          `${allRows.length} item(ns) CEL · ${comPreco} com preço · atualizado ${new Date().toLocaleString("pt-BR")}`;
+        fillFilterOptions();
+        applyFilter();
+        setStatus(`${allRows.length} item(ns) CEL · ${comPreco} com Atacado.`);
+      } catch (err) {
+        allRows = [];
+        viewRows = [];
+        fillFilterOptions();
+        renderTable();
+        setStatus(`Erro: ${err.message}`, true);
+        document.getElementById("tableBody").innerHTML =
+          `<tr><td colspan="5" class="error">Falha ao carregar: ${escapeHtml(err.message)}</td></tr>`;
+      } finally {
+        document.getElementById("btnReload").disabled = false;
+        document.getElementById("btnExcel").disabled = false;
+      }
+    }
+
+    document.getElementById("btnReload").addEventListener("click", loadData);
+    document.getElementById("btnExcel").addEventListener("click", downloadExcel);
+    document.getElementById("filterSearch").addEventListener("input", applyFilter);
+    document.getElementById("filterMarca").addEventListener("change", applyFilter);
+    document.getElementById("filterQualidade").addEventListener("change", applyFilter);
+
+    if (typeof SkylineVersion !== "undefined") SkylineVersion.start(60000);
+    renderGradeLegend();
+    loadData();
+  </script>
+</body>
+</html>
