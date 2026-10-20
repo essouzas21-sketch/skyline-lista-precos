@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Exo+2:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <script src="skyline-version.js?v=202609031020"></script>
-  <script src="skyline-precos.js?v=202609031020"></script>
+  <script src="skyline-version.js?v=20261020123358"></script>
+  <script src="skyline-precos.js?v=20261020123358"></script>
   <style>
     :root {
       --bg: #ffffff;
@@ -540,10 +540,13 @@
     function shortDescricao(produto) {
       const s = String(produto || "").trim();
       if (!s) return "—";
-      const idx = s.indexOf("-");
-      if (idx < 0) return s;
-      const left = s.slice(0, idx).trim();
-      return left || s;
+      // Remove só o sufixo de qualidade. Não corta em hífens do meio
+      // (ex.: E-SIM, MEIA-NOITE) — senão a cor e o restante somem.
+      const cleaned = s
+        .replace(/\s*-\s*(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i, "")
+        .replace(/\s+(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i, "")
+        .trim();
+      return cleaned || s;
     }
 
     function parseMoney(v) {
@@ -564,7 +567,7 @@
 
     function qualidadeFromProduto(produto) {
       const s = String(produto || "").trim();
-      const m = s.match(/\s-\s(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i);
+      const m = s.match(/\s*-?\s*(EXCELENTE|MUITO BOM|BOM|OUTLET)\s*$/i);
       return m ? m[1].toUpperCase() : "";
     }
 
